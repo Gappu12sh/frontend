@@ -3,7 +3,7 @@ name: crm_frontend
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build-and-deploy:
