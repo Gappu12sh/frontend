@@ -40,7 +40,7 @@ jobs:
 
       - name: Build the project
         env:
-          REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL_JETX }}
+          REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL_crm }}
           
         run: |
           CI='' npm run build
