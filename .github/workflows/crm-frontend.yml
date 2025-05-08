@@ -1,0 +1,53 @@
+name: crm_frontend_Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.14.0'
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install --save-dev @babel/plugin-proposal-private-property-in-object
+
+      - name: Deploy frontend to server
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} << 'EOF'
+            cd frontend  # Navigate to the frontend folder on the server
+            git pull origin main  # Pull the latest changes from the repository
+            npm install  # Install any missing dependencies
+            npm run build  # Build the React project
+            pm2 restart frontend  # Restart PM2 to serve the latest build
+          EOF
+
+      - name: Build the project
+        env:
+          REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL_JETX }}
+          
+        run: |
+          CI='' npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
