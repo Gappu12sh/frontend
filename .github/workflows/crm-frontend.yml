@@ -1,4 +1,4 @@
-name: crm_frontend
+name: crm_frontend_deploy
 
 on:
   push:
@@ -16,37 +16,51 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22.14.0'
+          node-version: '22'  # Specify version 22.x LTS of Node.js
 
       - name: Set up SSH key
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          
 
       - name: Install dependencies
         run: |
           npm install
           npm install --save-dev @babel/plugin-proposal-private-property-in-object
 
-      - name: Deploy frontend to server
+      - name: Install Node.js 22.x LTS, npm, and PM2 on the server
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} << 'EOF'
-            cd frontend  # Navigate to the frontend folder on the server
+            # Update the server package list
+            sudo apt update -y
+
+            # Install Node.js 22.x LTS from NodeSource repository
+            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+            sudo apt install -y nodejs
+
+            # Verify the installation of Node.js 22.x LTS and npm
+            node -v
+            npm -v
+
+            # Install PM2 globally
+            sudo npm install -g pm2
+            pm2 -v  # Verify PM2 installation
+
+            # Ensure you're in the correct directory
+            cd frontend  # Adjust the path to your frontend directory
             git pull origin main  # Pull the latest changes from the repository
             npm install  # Install any missing dependencies
             npm run build  # Build the React project
             pm2 restart frontend  # Restart PM2 to serve the latest build
           EOF
 
-      - name: Build the project
+      - name: Build the project (locally)
         env:
           REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL_crm }}
-          
         run: |
           CI='' npm run build
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (if applicable)
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
