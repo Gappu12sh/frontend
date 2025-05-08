@@ -1,0 +1,35 @@
+// import React, { createContext, useState, ReactNode } from "react";
+
+// interface User {
+//   id: number | null;
+//   email: string | null;
+//   role: number | null;
+// }
+// interface UserContextType {
+//   userToken: User;
+//   updateUser: (id: number, email: string, role: number) => void;
+// }
+
+// export const UserContext = createContext<UserContextType | null>(null);
+
+// interface UserProviderProps {
+//   children: ReactNode;
+// }
+
+// export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
+//   const [userToken, setUserToken] = useState<User>({
+//     id: null,
+//     email: null,
+//     role: null,
+//   });
+
+//   const updateUser = (id: number, email: string, role: number) => {
+//     setUserToken({ id, email, role });
+//   };
+
+//   return (
+//     <UserContext.Provider value={{ userToken, updateUser }}>
+//       {children}
+//     </UserContext.Provider>
+//   );
+// };

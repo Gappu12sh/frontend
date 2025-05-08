@@ -1,0 +1,21 @@
+import { createContext, useState } from "react";
+
+export const UserContext=createContext(null)
+
+export const UserProvider=({children})=>{
+    const [user,setUser]=useState({
+        id:null,
+        email:null,
+        role:null,
+    })
+    
+    const updateUser = (id, email, role) => {
+        setUser({ id, email, role });
+      };
+
+      return (
+        <UserContext.Provider value={{ user, updateUser }}>
+          {children}
+        </UserContext.Provider>
+      );
+    };
