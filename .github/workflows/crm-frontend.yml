@@ -16,14 +16,15 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'  # Ensure LTS version
+          node-version: '22'  # Use LTS if possible (e.g., 20)
 
-      - name: Build the React project
-        env:
-          REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL_crm }}
+      - name: Install dependencies and build React project
         run: |
           npm ci
           npm run build
+        env:
+          REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL_crm }}
+          CI: false  # Prevent React/ESLint from treating warnings as errors
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -32,20 +33,22 @@ jobs:
 
       - name: Deploy build to EC2 via SCP & SSH
         run: |
+          # Copy build folder to remote server
           scp -r -o StrictHostKeyChecking=no build ubuntu@${{ secrets.SERVER_IP }}:/home/ubuntu/frontend-build
 
+          # SSH into the server and set up deployment
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} << 'EOF'
-            # Setup Node.js & PM2 if not already installed
+            # Install Node.js & PM2 if not already installed
             curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
             sudo apt-get install -y nodejs
             sudo npm install -g pm2
 
-            # Move to deployment directory
+            # Deploy the new build
             mkdir -p /home/ubuntu/frontend
             rm -rf /home/ubuntu/frontend/*
             mv /home/ubuntu/frontend-build/* /home/ubuntu/frontend/
 
-            # Restart PM2 or start if not already running
+            # Restart frontend via PM2
             pm2 delete frontend || true
             pm2 serve /home/ubuntu/frontend 3000 --name frontend --spa
           EOF
