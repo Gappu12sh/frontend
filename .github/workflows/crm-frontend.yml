@@ -22,10 +22,7 @@ jobs:
         run: |
           npm ci
           npm run build
-        env:
-          REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL_crm }}
-          CI: false  # Prevent React/ESLint from treating warnings as errors
-
+       
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
