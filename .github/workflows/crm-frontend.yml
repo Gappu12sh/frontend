@@ -46,9 +46,9 @@ jobs:
             sudo npm install -g pm2
             pm2 -v  # Verify PM2 installation
 
-            if [ ! -d "frontend" ]; then
-              git clone https://github.com/Gappu12sh/frontend.git frontend
-            fi
+          
+            git clone https://github.com/Gappu12sh/frontend.git frontend
+            
 
             # Ensure you're in the correct directory
             cd frontend  # Adjust the path to your frontend directory
