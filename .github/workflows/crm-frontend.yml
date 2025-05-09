@@ -16,45 +16,36 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22' 
+          node-version: '22'  # Ensure LTS version
 
-      - name: Set up SSH key
+      - name: Build the React project
+        env:
+          REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL_crm }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to EC2 server
+      - name: Deploy build to EC2 via SCP & SSH
         run: |
+          scp -r -o StrictHostKeyChecking=no build ubuntu@${{ secrets.SERVER_IP }}:/home/ubuntu/frontend-build
+
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} << 'EOF'
-            set -e  # stop on error
+            # Setup Node.js & PM2 if not already installed
+            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            sudo npm install -g pm2
 
-            # 1. Install Node.js v22 and PM2 if not installed
-            if ! command -v node || ! node -v | grep -q "v22"; then
-              curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-              sudo apt install -y nodejs
-              sudo npm install -g pm2
-            fi
+            # Move to deployment directory
+            mkdir -p /home/ubuntu/frontend
+            rm -rf /home/ubuntu/frontend/*
+            mv /home/ubuntu/frontend-build/* /home/ubuntu/frontend/
 
-            # 2. Clone or pull frontend repo
-            cd /home/ubuntu
-            if [ ! -d "frontend" ]; then
-              git clone https://github.com/Gappu12sh/frontend.git
-            fi
-
-            cd frontend
-            git pull origin master
-
-            # 3. Set environment variable and build
-            export REACT_APP_BASE_URL=${REACT_APP_BASE_URL}
-            npm install
-            npm run build
-
-            # 4. Restart or start PM2 
-            if pm2 list | grep -q "frontend"; then
-              pm2 restart frontend
-            else
-              pm2 serve build 3000 --name frontend
-            fi
+            # Restart PM2 or start if not already running
+            pm2 delete frontend || true
+            pm2 serve /home/ubuntu/frontend 3000 --name frontend --spa
           EOF
-        env:
-          REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL_crm }}
