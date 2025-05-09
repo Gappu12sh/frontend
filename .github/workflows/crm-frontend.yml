@@ -49,7 +49,7 @@ jobs:
             npm install
             npm run build
 
-            # 4. Restart or start PM2
+            # 4. Restart or start PM2 
             if pm2 list | grep -q "frontend"; then
               pm2 restart frontend
             else
